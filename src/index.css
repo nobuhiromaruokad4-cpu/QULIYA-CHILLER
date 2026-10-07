@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+@media print {
+  /* 印刷時は不要なヘッダー・フッター・操作ボタン・説明注釈を非表示 */
+  header,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+
+  /* A4縦1ページに確実に収めるための用紙設定 */
+  @page {
+    size: A4 portrait;
+    margin: 5mm 6mm 5mm 6mm;
+  }
+
+  html, body {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 11pt !important;
+    line-height: 1.25 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    height: 100% !important;
+  }
+
+  /* 印刷時：最小文字サイズをすべて11pt以上に底上げ・保証 */
+  p, span, div, a, td, th, li, label, strong, b {
+    font-size: 11pt;
+  }
+
+  .text-\[9px\],
+  .text-\[9\.5px\],
+  .text-\[10px\],
+  .text-\[10\.5px\],
+  .text-\[11px\],
+  .text-xs,
+  .text-sm {
+    font-size: 11pt !important;
+    line-height: 1.25 !important;
+  }
+
+  /* 見出しや重要数値の視認性階層 */
+  .text-base {
+    font-size: 12pt !important;
+  }
+  .text-lg {
+    font-size: 13.5pt !important;
+  }
+  .text-xl {
+    font-size: 15pt !important;
+  }
+  .text-2xl {
+    font-size: 17pt !important;
+  }
+  .text-3xl {
+    font-size: 19pt !important;
+  }
+
+  main {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* 印刷時改ページ防止 */
+  .page-break-inside-avoid,
+  .print-fit-page {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
+  }
+
+  /* 印刷時の余白とパディングを詰めて1ページに圧縮 */
+  .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.25rem !important;
+  }
+  .space-y-2 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.2rem !important;
+  }
+  .space-y-2\.5 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.22rem !important;
+  }
+
+  .p-3\.5, .p-4 {
+    padding: 0.4rem !important;
+  }
+  .p-3 {
+    padding: 0.35rem !important;
+  }
+  .p-2\.5 {
+    padding: 0.3rem !important;
+  }
+  .p-2 {
+    padding: 0.25rem !important;
+  }
+
+  /* 影の無効化 */
+  .shadow-xs,
+  .shadow-2xs,
+  .shadow-md {
+    box-shadow: none !important;
+  }
+
+  /* 印刷時のグラフと図面画像の高さ最適化（1ページ完結） */
+  .print\:max-h-\[130px\] {
+    max-height: 125px !important;
+  }
+}

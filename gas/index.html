@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>撹拌式急速冷却シミュレーター (QULIYA CHILLER)</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+      line-height: 1.45;
+      font-size: 13.5px;
+    }
+    .container { max-width: 1180px; margin: 0 auto; padding: 12px 16px; }
+    
+    /* Header */
+    .header {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 16px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .header-logos { display: flex; align-items: center; gap: 14px; }
+    .header-logo-img { height: 26px; width: auto; object-fit: contain; }
+    .header-divider { height: 24px; width: 1px; background: #cbd5e1; }
+    .header-title-box h1 { font-size: 15px; font-weight: 700; color: #0284c7; }
+    .header-title-box p { font-size: 11px; color: #64748b; }
+    .header-actions { display: flex; gap: 8px; align-items: center; }
+    
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+    }
+    .btn-primary { background: #0284c7; color: #ffffff; }
+    .btn-primary:hover { background: #0369a1; }
+    .btn-outline { background: #ffffff; border-color: #cbd5e1; color: #334155; }
+    .btn-outline:hover { background: #f1f5f9; }
+    
+    /* Layout */
+    .grid-main {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    @media (max-width: 900px) {
+      .grid-main { grid-template-columns: 1fr; }
+    }
+    
+    .card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .card-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 6px;
+    }
+    
+    /* Form */
+    .form-group { margin-bottom: 9px; }
+    .form-group label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 3px;
+    }
+    .form-group label span.val { color: #0284c7; font-weight: 700; }
+    .form-control {
+      width: 100%;
+      padding: 5px 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-size: 12.5px;
+      background: #f8fafc;
+    }
+    .form-control:focus { outline: none; border-color: #0284c7; background: #fff; }
+    .slider-row { display: flex; align-items: center; gap: 8px; }
+    .slider-row input[type="range"] { flex: 1; accent-color: #0284c7; }
+    .slider-row input[type="number"] { width: 68px; text-align: right; }
+    
+    /* Status banner */
+    .calc-status {
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #f0fdf4;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+    .calc-status.loading {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border-color: #bfdbfe;
+    }
+    
+    /* Table comparison */
+    .table-responsive { overflow-x: auto; margin-top: 10px; }
+    table.compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      text-align: center;
+    }
+    table.compare-table th, table.compare-table td {
+      padding: 7px 8px;
+      border: 1px solid #e2e8f0;
+    }
+    table.compare-table th { background: #f8fafc; font-weight: 600; color: #334155; }
+    table.compare-table tr.highlight-quliya td {
+      background: #f0f9ff;
+      font-weight: 700;
+      color: #0369a1;
+    }
+    .badge-patent {
+      display: inline-block;
+      background: #0284c7;
+      color: #fff;
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      margin-left: 4px;
+      font-weight: 600;
+    }
+    
+    /* Bottom Grid */
+    .grid-bottom {
+      display: grid;
+      grid-template-columns: 8fr 4fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    @media (max-width: 900px) {
+      .grid-bottom { grid-template-columns: 1fr; }
+    }
+    
+    /* Danger callout */
+    .danger-callout {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-left: 4px solid #ea580c;
+      border-radius: 6px;
+      padding: 9px 12px;
+      margin-top: 10px;
+      font-size: 11.5px;
+      color: #9a3412;
+      line-height: 1.5;
+    }
+    .danger-callout strong { color: #c2410c; }
+    
+    /* Mechanism Card */
+    .mech-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-bottom: 8px;
+      font-size: 11.5px;
+      color: #334155;
+      line-height: 1.45;
+    }
+    .mech-box h4 {
+      font-size: 12px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    /* Contact Box */
+    .contact-box {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 9px 11px;
+      font-size: 11.5px;
+      color: #334155;
+    }
+    .contact-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #0284c7;
+      margin-bottom: 5px;
+    }
+    .contact-row { margin-bottom: 3px; display: flex; align-items: center; gap: 6px; }
+    .contact-logos-2rows {
+      margin-top: 8px;
+      padding-top: 6px;
+      border-top: 1px dashed #cbd5e1;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .contact-logo-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    .contact-logo-img { height: 20px; width: auto; object-fit: contain; }
+    
+    /* Chart container */
+    .chart-wrapper {
+      position: relative;
+      height: 270px;
+      width: 100%;
+    }
+    
+    /* Print Styles (A4 Portrait 1 Page) */
+    @media print {
+      body { background: #fff !important; font-size: 11pt !important; }
+      .container { max-width: 100% !important; padding: 0 !important; }
+      .no-print, .header-actions { display: none !important; }
+      .grid-main { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+      .grid-bottom { grid-template-columns: 7fr 5fr !important; gap: 8px !important; }
+      .card { box-shadow: none !important; border-color: #cbd5e1 !important; padding: 8px 10px !important; page-break-inside: avoid; }
+      .chart-wrapper { height: 230px !important; }
+      table.compare-table th, table.compare-table td { font-size: 10.5pt !important; padding: 5px !important; }
+      @page { size: A4 portrait; margin: 8mm 8mm 8mm 8mm; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-logos">
+      <img src="https://www.shin-works.co.jp/wp-content/themes/shinetsu_works/dist/images/logo.svg" alt="新越ワークス" class="header-logo-img">
+      <div class="header-divider"></div>
+      <div class="header-title-box">
+        <h1>撹拌式急速冷却シミュレーター (QULIYA CHILLER)</h1>
+        <p>新越ワークス × 東北大学 多元物質科学研究所 共同開発（特許取得技術）</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary no-print" onclick="calculate()">
+        <span>🔄</span> 再計算実行
+      </button>
+      <button class="btn btn-outline no-print" onclick="window.print()">
+        <span>🖨️</span> A4印刷 / PDF
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Top Grid -->
+  <div class="grid-main">
+    <!-- Left: Inputs -->
+    <div class="card">
+      <div class="card-title">
+        <span>冷却パラメータ条件設定</span>
+        <span style="font-size: 11px; color: #64748b; font-weight: normal;">※サーバー完全保護実行</span>
+      </div>
+
+      <div class="form-group">
+        <label>スープ量: <span class="val" id="val-soup">35</span> kg (L)</label>
+        <div class="slider-row">
+          <input type="range" min="10" max="80" step="1" value="35" id="inp-soup" oninput="sync('soup', this.value)">
+          <input type="number" class="form-control" value="35" id="num-soup" onchange="sync('soup', this.value)">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>初期スープ温度: <span class="val" id="val-start">95</span> ℃</label>
+        <div class="slider-row">
+          <input type="range" min="60" max="100" step="1" value="95" id="inp-start" oninput="sync('start', this.value)">
+          <input type="number" class="form-control" value="95" id="num-start" onchange="sync('start', this.value)">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>目標冷却温度: <span class="val" id="val-target">30</span> ℃</label>
+        <div class="slider-row">
+          <input type="range" min="15" max="50" step="1" value="30" id="inp-target" oninput="sync('target', this.value)">
+          <input type="number" class="form-control" value="30" id="num-target" onchange="sync('target', this.value)">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>冷却水温 (水道水): <span class="val" id="val-taptemp">20</span> ℃</label>
+        <div class="slider-row">
+          <input type="range" min="5" max="28" step="1" value="20" id="inp-taptemp" oninput="sync('taptemp', this.value)">
+          <input type="number" class="form-control" value="20" id="num-taptemp" onchange="sync('taptemp', this.value)">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>冷却水流量: <span class="val" id="val-tapflow">10</span> L/min</label>
+        <div class="slider-row">
+          <input type="range" min="3" max="20" step="0.5" value="10" id="inp-tapflow" oninput="sync('tapflow', this.value)">
+          <input type="number" class="form-control" value="10" id="num-tapflow" onchange="sync('tapflow', this.value)">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>撹拌回転数 (QULIYA): <span class="val" id="val-rpm">700</span> rpm</label>
+        <div class="slider-row">
+          <input type="range" min="100" max="1200" step="50" value="700" id="inp-rpm" oninput="sync('rpm', this.value)">
+          <input type="number" class="form-control" value="700" id="num-rpm" onchange="sync('rpm', this.value)">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>スープ糖度 (Brix): <span class="val" id="val-brix">0</span> %</label>
+        <div class="slider-row">
+          <input type="range" min="0" max="25" step="1" value="0" id="inp-brix" oninput="sync('brix', this.value)">
+          <input type="number" class="form-control" value="0" id="num-brix" onchange="sync('brix', this.value)">
+        </div>
+      </div>
+
+      <div class="calc-status" id="status-box">
+        <span>✓</span> 計算完了 (最新データ表示中)
+      </div>
+    </div>
+
+    <!-- Right: Comparison Table & Highlights -->
+    <div class="card">
+      <div class="card-title">
+        <span>1回あたりの冷却スピード＆コスト対比</span>
+        <span style="font-size: 11px; color: #0284c7; font-weight: 600;">水道代: 0.50円/L (上下水合算)</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>方式</th>
+              <th>目標冷却時間</th>
+              <th>水道使用量</th>
+              <th>1回コスト</th>
+              <th>月間コスト (25日)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="highlight-quliya">
+              <td style="text-align: left; padding-left: 12px;">
+                <strong>QULIYA式</strong>
+                <span class="badge-patent">推奨・特許</span>
+              </td>
+              <td id="tb-quliya-time">-- 分</td>
+              <td id="tb-quliya-water">-- L</td>
+              <td id="tb-quliya-cost">-- 円</td>
+              <td id="tb-quliya-month">-- 円</td>
+            </tr>
+            <tr>
+              <td style="text-align: left; padding-left: 12px;">コイル式 (浸漬)</td>
+              <td id="tb-coil-time">-- 分</td>
+              <td id="tb-coil-water">-- L</td>
+              <td id="tb-coil-cost">-- 円</td>
+              <td id="tb-coil-month">-- 円</td>
+            </tr>
+            <tr>
+              <td style="text-align: left; padding-left: 12px;">シンク流水式</td>
+              <td id="tb-sink-time">-- 分</td>
+              <td id="tb-sink-water">-- L</td>
+              <td id="tb-sink-cost">-- 円</td>
+              <td id="tb-sink-month">-- 円</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Danger Zone Notice -->
+      <div class="danger-callout">
+        <strong>⚠️ 細菌爆発増殖ピーク帯（35℃〜40℃）の危険性：</strong><br>
+        食中毒菌（中温菌）はヒトの体温に近い37℃前後で最も急速に分裂（10〜20分で菌数2倍）。
+        <strong>目標温度30℃まで一気に下げること</strong>で、この最危険温度帯を最速で離脱し、品質劣化・腐敗リスクを根本から防ぎます。
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Bottom Grid -->
+  <div class="grid-bottom">
+    <!-- Left: Chart (Wide 8/12) -->
+    <div class="card">
+      <div class="card-title">
+        <span>3方式冷却スピード比較グラフ (0〜60分・10分刻み)</span>
+        <span style="font-size: 11px; color: #64748b;">縦軸: スープ温度 (℃) / 横軸: 経過時間 (分)</span>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="coolingChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Right: Mechanism & Contact (Compact 4/12) -->
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <!-- Mechanism Card -->
+      <div class="mech-box">
+        <h4>⚙️ 回転式急速冷却のメカニズム</h4>
+        <p>二重構造円筒の高速回転により、<strong>内外面の強制撹拌</strong>を同時発生。境膜熱抵抗を極限まで低減し、従来のコイル式・流水浸漬に比べ圧倒的な冷却熱伝達率を実現しています。</p>
+        <div style="margin-top: 5px; font-size: 10.5px; color: #0284c7; font-weight: 600;">
+          特許第7596041号 / 特願2024-006371
+        </div>
+      </div>
+
+      <!-- Contact Info Card -->
+      <div class="contact-box">
+        <div class="contact-title">📞 お問い合わせ・製品窓口</div>
+        <div class="contact-row">
+          <strong>株式会社 新越ワークス</strong> (開発担当: 山後様・早人様)
+        </div>
+        <div class="contact-row" style="font-size: 11px; color: #64748b;">
+          新潟県燕市小関670番地 / TEL: 0256-63-2566
+        </div>
+        <div class="contact-row" style="font-size: 11px; color: #64748b;">
+          Mail: th-sango@shin-works.co.jp
+        </div>
+
+        <!-- 2-Rows Logos -->
+        <div class="contact-logos-2rows">
+          <div class="contact-logo-row">
+            <img src="https://www.shin-works.co.jp/wp-content/themes/shinetsu_works/dist/images/logo.svg" alt="新越ワークス" class="contact-logo-img" style="height: 18px;">
+            <span style="font-size: 10.5px; font-weight: 700; color: #0284c7;">QULIYA CHILLER</span>
+          </div>
+          <div class="contact-logo-row">
+            <img src="https://www2.tagen.tohoku.ac.jp/wp-content/themes/tagen2022/images/IMRAM_logo2022_full.svg" alt="東北大学 多元研" class="contact-logo-img" style="height: 22px;">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let chartInstance = null;
+  let debounceTimer = null;
+
+  function sync(key, val) {
+    document.getElementById('val-' + key).innerText = val;
+    document.getElementById('inp-' + key).value = val;
+    document.getElementById('num-' + key).value = val;
+
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(calculate, 600);
+  }
+
+  function getParams() {
+    return {
+      Soup_mass: parseFloat(document.getElementById('inp-soup').value),
+      StartTemp: parseFloat(document.getElementById('inp-start').value),
+      customTargetTemp: parseFloat(document.getElementById('inp-target').value),
+      TapTemp: parseFloat(document.getElementById('inp-taptemp').value),
+      TapFlow: parseFloat(document.getElementById('inp-tapflow').value),
+      RPM: parseFloat(document.getElementById('inp-rpm').value),
+      Brix: parseFloat(document.getElementById('inp-brix').value),
+      Pot_D_mm: 390,
+      Pot_H_mm: 390,
+      Ex_D_mm: 100,
+      Ex_L_mm: 300,
+      RoomTemp: 25.0,
+      RoomRH: 80.0,
+      dt: 2.0,
+      maxTimeMin: 60
+    };
+  }
+
+  function calculate() {
+    const statusBox = document.getElementById('status-box');
+    statusBox.className = 'calc-status loading';
+    statusBox.innerHTML = '<span>⏳</span> サーバー計算中 (特許ロジック実行中)...';
+
+    const params = getParams();
+
+    // Google Apps Script サーバー側関数を呼び出し
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run
+        .withSuccessHandler(onSuccess)
+        .withFailureHandler(onError)
+        .apiSimulate3Modes(params);
+    } else {
+      // ローカル/モック用フォールバック
+      console.warn('google.script.run が見つかりません。モック処理を実行します。');
+      setTimeout(() => {
+        statusBox.className = 'calc-status';
+        statusBox.innerHTML = '<span>✓</span> ローカルプレビュー表示';
+      }, 500);
+    }
+  }
+
+  function onSuccess(response) {
+    const statusBox = document.getElementById('status-box');
+    statusBox.className = 'calc-status';
+    statusBox.innerHTML = '<span>✓</span> 計算完了 (最新データ表示中)';
+
+    if (!response.success || !response.data) {
+      alert('計算エラー: ' + (response.error || '不明なエラー'));
+      return;
+    }
+
+    const d = response.data;
+    updateUI(d);
+  }
+
+  function onError(err) {
+    const statusBox = document.getElementById('status-box');
+    statusBox.className = 'calc-status';
+    statusBox.style.color = '#b91c1c';
+    statusBox.innerHTML = '<span>❌</span> 通信エラー: ' + err.toString();
+  }
+
+  function updateUI(data) {
+    const r = data.rotary;
+    const c = data.coil;
+    const s = data.sink;
+
+    const waterRate = 0.50; // 円/L (上下水合算)
+    const workDays = 25;
+
+    // テーブル更新ヘルパー
+    function updateRow(prefix, res) {
+      const time = res.timeToTarget !== null ? res.timeToTarget : res.totalTimeMin;
+      const waterL = (time * res.params.TapFlow).toFixed(0);
+      const costPerBatch = Math.round(waterL * waterRate);
+      const costMonth = costPerBatch * workDays;
+
+      document.getElementById('tb-' + prefix + '-time').innerText = time + ' 分';
+      document.getElementById('tb-' + prefix + '-water').innerText = Number(waterL).toLocaleString() + ' L';
+      document.getElementById('tb-' + prefix + '-cost').innerText = costPerBatch.toLocaleString() + ' 円';
+      document.getElementById('tb-' + prefix + '-month').innerText = costMonth.toLocaleString() + ' 円';
+    }
+
+    updateRow('quliya', r);
+    updateRow('coil', c);
+    updateRow('sink', s);
+
+    // グラフ更新
+    updateChart(r, c, s);
+  }
+
+  function updateChart(rotary, coil, sink) {
+    const ctx = document.getElementById('coolingChart').getContext('2d');
+
+    const maxTime = 60;
+    const labels = [];
+    for (let t = 0; t <= maxTime; t += 10) {
+      labels.push(t);
+    }
+
+    function extractPoints(res) {
+      const pts = [];
+      res.timeSeries.forEach(p => {
+        if (p.timeMin <= maxTime) {
+          pts.push({ x: p.timeMin, y: p.soupTemp });
+        }
+      });
+      return pts;
+    }
+
+    const dataQuliya = extractPoints(rotary);
+    const dataCoil = extractPoints(coil);
+    const dataSink = extractPoints(sink);
+
+    if (chartInstance) {
+      chartInstance.destroy();
+    }
+
+    chartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'QULIYA式 (推奨・特許)',
+            data: dataQuliya,
+            borderColor: '#0284c7',
+            backgroundColor: 'rgba(2, 132, 199, 0.1)',
+            borderWidth: 2.5,
+            tension: 0.1,
+            pointRadius: 0
+          },
+          {
+            label: 'コイル式 (浸漬)',
+            data: dataCoil,
+            borderColor: '#eab308',
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            borderDash: [4, 4],
+            tension: 0.1,
+            pointRadius: 0
+          },
+          {
+            label: 'シンク流水式',
+            data: dataSink,
+            borderColor: '#10b981',
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            borderDash: [6, 4],
+            tension: 0.1,
+            pointRadius: 0
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'linear',
+            min: 0,
+            max: 60,
+            ticks: {
+              stepSize: 10,
+              callback: function(v) { return v + '分'; }
+            },
+            title: { display: true, text: '経過時間 (分)' }
+          },
+          y: {
+            min: 15,
+            max: 100,
+            ticks: {
+              stepSize: 10,
+              callback: function(v) { return v + '℃'; }
+            },
+            title: { display: true, text: 'スープ温度 (℃)' }
+          }
+        },
+        plugins: {
+          legend: { position: 'top' },
+          tooltip: {
+            callbacks: {
+              label: function(c) {
+                return c.dataset.label + ': ' + c.parsed.y.toFixed(1) + '℃ (' + c.parsed.x.toFixed(1) + '分)';
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // 初回読み込み時に自動計算
+  window.addEventListener('load', function() {
+    calculate();
+  });
+</script>
+
+</body>
+</html>
